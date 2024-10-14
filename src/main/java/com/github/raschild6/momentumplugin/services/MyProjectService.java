@@ -1,4 +1,4 @@
-package momentumplugin.services;
+package com.github.raschild6.momentumplugin.services;
 
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;

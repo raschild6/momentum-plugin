@@ -1,4 +1,4 @@
-package momentumplugin.toolWindow;
+package com.github.raschild6.momentumplugin.toolWindow;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
@@ -7,7 +7,7 @@ import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.content.ContentFactory;
-import momentumplugin.services.MyProjectService;
+import com.github.raschild6.momentumplugin.services.MyProjectService;
 
 import javax.swing.*;
 import java.awt.*;
