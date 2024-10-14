@@ -4,6 +4,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java") // Java support
+    id("checkstyle") // Checkstyle support
     alias(libs.plugins.kotlin) // Kotlin support
     alias(libs.plugins.intelliJPlatform) // IntelliJ Platform Gradle Plugin
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
@@ -90,7 +91,7 @@ intellijPlatform {
     signing {
         certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
         privateKey = providers.environmentVariable("PRIVATE_KEY")
-        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+        password = ""
     }
 
     publishing {
@@ -154,4 +155,22 @@ intellijPlatformTesting {
             }
         }
     }
+}
+
+// Configurazione di Checkstyle
+checkstyle {
+    toolVersion = "8.29" // Versione di Checkstyle
+    configFile = file("config/checkstyle/checkstyle.xml") // File di configurazione delle regole
+}
+
+tasks.withType<Checkstyle> {
+    reports {
+        xml.required = false // Disabilita report XML se non necessario
+        html.required = true // Abilita report HTML
+    }
+}
+
+// Assicurati che Checkstyle venga eseguito prima della compilazione
+tasks.withType<JavaCompile> {
+    finalizedBy(tasks.checkstyleMain)
 }
