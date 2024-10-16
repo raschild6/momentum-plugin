@@ -4,15 +4,26 @@
     <name>momentum</name>
     <vendor>raschild6</vendor>
 
+    <description>
+        This plugin integrates a real-time code change listener for IntelliJ-based IDEs.
+        It monitors document changes within the project and triggers custom code analysis after each modification.
+    </description>
+
     <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.raschild6.momentumplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow
+                factoryClass="com.github.raschild6.momentumplugin.toolWindow.CodeQualityToolWindowFactory"
+                id="CodeQualityToolWindowFactory"
+                anchor="bottom"/>
     </extensions>
 
     <applicationListeners>
-        <listener class="com.github.raschild6.momentumplugin.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener
+                class="com.github.raschild6.momentumplugin.listeners.CodeChangeListener"
+                topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
     </applicationListeners>
+
 </idea-plugin>
