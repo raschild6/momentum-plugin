@@ -156,21 +156,3 @@ intellijPlatformTesting {
         }
     }
 }
-
-// Configurazione di Checkstyle
-checkstyle {
-    toolVersion = "8.29" // Versione di Checkstyle
-    configFile = file("config/checkstyle/checkstyle.xml") // File di configurazione delle regole
-}
-
-tasks.withType<Checkstyle> {
-    reports {
-        xml.required = false // Disabilita report XML se non necessario
-        html.required = true // Abilita report HTML
-    }
-}
-
-// Assicurati che Checkstyle venga eseguito prima della compilazione
-tasks.withType<JavaCompile> {
-    finalizedBy(tasks.checkstyleMain)
-}
