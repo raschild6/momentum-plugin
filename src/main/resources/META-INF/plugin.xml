@@ -5,9 +5,18 @@
     <vendor>raschild6</vendor>
 
     <description>
-        This plugin integrates a real-time code change listener for IntelliJ-based IDEs.
-        It monitors document changes within the project and triggers custom code analysis after each modification.
+        <![CDATA[
+        This plugin provides advanced support for managing project-specific SonarQube rules, including:
+
+        * Dynamic rule creation with regex matching for enhanced flexibility.
+        * Integration with Java-based custom rules for seamless adaptability.
+        * User-friendly tools for importing and exporting rules to SonarQube profiles.
+
+        Empower your development process with customizable and easily managed code quality rules.
+        ]]>
     </description>
+
+
 
     <depends>com.intellij.modules.platform</depends>
 
@@ -15,15 +24,13 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow
-                factoryClass="com.github.raschild6.momentumplugin.toolWindow.CodeQualityToolWindowFactory"
-                id="CodeQualityToolWindowFactory"
-                anchor="bottom"/>
+                id="Rules Manager"
+                factoryClass="com.github.raschild6.momentumplugin.toolWindows.RulesToolWindowFactory"
+                anchor="bottom"
+                icon="AllIcons.Toolwindows.ToolWindowInspection" />
     </extensions>
 
     <applicationListeners>
-        <listener
-                class="com.github.raschild6.momentumplugin.listeners.CodeChangeListener"
-                topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
     </applicationListeners>
 
 </idea-plugin>

@@ -4,7 +4,6 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java") // Java support
-    id("checkstyle") // Checkstyle support
     alias(libs.plugins.kotlin) // Kotlin support
     alias(libs.plugins.intelliJPlatform) // IntelliJ Platform Gradle Plugin
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
@@ -28,11 +27,36 @@ repositories {
     intellijPlatform {
         defaultRepositories()
     }
+
+    maven {
+        url = uri("https://maven.sonarsource.org")
+    }
 }
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
     testImplementation(libs.junit)
+
+    // SonarQube Plugin API
+    /*
+        10.7.0.96327	10.11.0.2468
+        10.6.0.92116	10.7.0.2191
+        10.5.1.90531	10.7.0.2191
+        10.4.0.87286	10.6.0.2114
+        10.3.0.82913	10.2.0.1908
+        10.2.0.77647	10.1.0.809
+        10.1.0.73491	9.17.0.587
+        10.0.0.68432	9.14.0.375
+        9.9.0.65466	    9.14.0.375
+        9.8.0.63668	    9.13.0.360
+        9.7.1.62043	    9.11.0.290
+        9.7.0.61563	    9.11.0.290
+        9.6.1.59531	    9.9.0.229
+        9.6.0.59041	    9.9.0.229
+        9.5.0.56709	    9.6.1.114
+        9.4.0.54424     or earlier	Matches sonarqube version
+    */
+    implementation("org.sonarsource.api.plugin:sonar-plugin-api:10.11.0.2468")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
