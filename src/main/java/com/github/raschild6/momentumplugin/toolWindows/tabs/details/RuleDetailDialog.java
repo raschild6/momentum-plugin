@@ -33,7 +33,7 @@ public class RuleDetailDialog extends JDialog {
         detailsPanel.setLayout(new GridLayout(0, 2));  // Due colonne per "label" e "input"
 
         detailsPanel.add(new JLabel("Severity:"));
-        severityField = new JTextField(rule.severity() != null ? rule.severity() : "Normal");
+//        severityField = new JTextField(rule.defaultImpacts() != null ? rule.defaultImpacts() : "Normal");
         detailsPanel.add(severityField);
 
         // Bottone per salvare le modifiche

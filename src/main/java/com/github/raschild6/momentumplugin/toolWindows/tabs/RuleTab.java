@@ -74,7 +74,7 @@ public class RuleTab extends JPanel {
             tableModel.addRow(new Object[]{
                 rule.key(),          // Key della regola
                 rule.name(),         // Nome della regola
-                rule.severity(),     // Severità
+//                rule.severity(),     // Severità
                 rule.status()        // Stato della regola
             });
         }
