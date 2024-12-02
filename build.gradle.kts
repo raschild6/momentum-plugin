@@ -56,7 +56,7 @@ dependencies {
         9.5.0.56709	    9.6.1.114
         9.4.0.54424     or earlier	Matches sonarqube version
     */
-    implementation("org.sonarsource.api.plugin:sonar-plugin-api:10.11.0.2468")
+    implementation("org.sonarsource.api.plugin:sonar-plugin-api:10.14.0.2599")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
