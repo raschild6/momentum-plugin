@@ -6,7 +6,7 @@ package com.github.raschild6.momentumplugin.models;
 public class Configuration {
     private String serverUrl;
     private char[] token;
-    private int activeProfileIndex;
+    private String activeProfile;
     private String proxyHost;
     private String proxyPort;
     private String proxyUsername;
@@ -17,11 +17,11 @@ public class Configuration {
     public Configuration() {
     }
 
-    public Configuration(String serverUrl, char[] token, int activeProfileIndex,
+    public Configuration(String serverUrl, char[] token, String activeProfile,
                          String proxyHost, String proxyPort, String proxyUsername, char[] proxyPassword) {
         this.serverUrl = serverUrl;
         this.token = token;
-        this.activeProfileIndex = activeProfileIndex;
+        this.activeProfile = activeProfile;
         this.proxyHost = proxyHost;
         this.proxyPort = proxyPort;
         this.proxyUsername = proxyUsername;
@@ -44,12 +44,12 @@ public class Configuration {
         this.token = token;
     }
 
-    public int getActiveProfileIndex() {
-        return activeProfileIndex;
+    public String getActiveProfile() {
+        return activeProfile;
     }
 
-    public void setActiveProfileIndex(int activeProfileIndex) {
-        this.activeProfileIndex = activeProfileIndex;
+    public void setActiveProfile(String activeProfile) {
+        this.activeProfile = activeProfile;
     }
 
     public String getProxyHost() {

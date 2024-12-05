@@ -4,12 +4,10 @@ import org.sonar.api.server.rule.RulesDefinition.Rule;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class RuleDetailDialog extends JDialog {
 
-    private Rule rule;  // La regola da visualizzare
+    private Rule rule;
     private JTextArea descriptionTextArea;
     private JTextField severityField;
 
@@ -38,12 +36,7 @@ public class RuleDetailDialog extends JDialog {
 
         // Bottone per salvare le modifiche
         JButton saveButton = new JButton("Save");
-        saveButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveChanges();
-            }
-        });
+        saveButton.addActionListener(e -> saveChanges());
 
         // Aggiungi al dialogo
         add(descriptionPanel, BorderLayout.CENTER);

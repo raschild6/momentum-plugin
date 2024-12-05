@@ -8,6 +8,13 @@ import com.intellij.util.ui.JBUI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 public class SonarConfigTab extends JPanel {
     private final SonarManager sonarManager;
@@ -16,6 +23,8 @@ public class SonarConfigTab extends JPanel {
     public SonarConfigTab(SonarManager sonarManager, LogManager logManager) {
         this.sonarManager = sonarManager;
         this.logManager = logManager;
+
+        Map<String, String> profilesSonarMap = new HashMap<>();
 
         setLayout(new BorderLayout());
 
@@ -47,7 +56,7 @@ public class SonarConfigTab extends JPanel {
         // Sezione 3: Profilo attivo
         JPanel profilePanel = createTitledPanel("");
         profilePanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        JComboBox<String> profileComboBox = new JComboBox<>();
+        JComboBox<AbstractMap.SimpleEntry<String, String>> profileComboBox = new JComboBox<>();
         JButton updateProfilesButton = new JButton("Refresh Profiles");
         profilePanel.add(createCenteredLabel("Profile:"));
         profilePanel.add(profileComboBox);
@@ -70,7 +79,6 @@ public class SonarConfigTab extends JPanel {
         proxyPanel.add(createCenteredLabel("Password:"));
         proxyPanel.add(proxyPasswordField);
         proxyPanel.setBorder(JBUI.Borders.empty(10));
-
 
         // Pannelli espandibili
         CollapsiblePanel collapsibleServerPanel = new CollapsiblePanel("SonarQube Server Configuration", serverPanel);
@@ -107,12 +115,25 @@ public class SonarConfigTab extends JPanel {
 
         testAuthButton.addActionListener(e -> testAuthentication(serverUrlField.getText(), new String(tokenField.getPassword())));
 
-        updateProfilesButton.addActionListener(e -> updateProfiles(profileComboBox, serverUrlField.getText(), new String(tokenField.getPassword())));
+        updateProfilesButton.addActionListener(e -> {
+            updateProfiles(profileComboBox, serverUrlField.getText(), new String(tokenField.getPassword()));
+            updateConfiguration(
+                serverUrlField.getText(),
+                tokenField.getPassword(),
+                null,
+                proxyHostField.getText(),
+                proxyPortField.getText(),
+                proxyUsernameField.getText(),
+                proxyPasswordField.getPassword()
+            );
+        });
 
         saveButton.addActionListener(e -> saveConfiguration(
             serverUrlField.getText(),
             tokenField.getPassword(),
-            profileComboBox.getSelectedIndex(),
+            profileComboBox.getSelectedIndex() != -1 ?
+                ((AbstractMap.SimpleEntry<String, String>) profileComboBox.getSelectedItem()).getKey() :
+                null,
             proxyHostField.getText(),
             proxyPortField.getText(),
             proxyUsernameField.getText(),
@@ -139,11 +160,25 @@ public class SonarConfigTab extends JPanel {
             proxyPasswordField,
             new Configuration("",
                 "".toCharArray(),
-                -1,
+                null,
                 "",
                 "",
                 "",
                 "".toCharArray())));
+
+        addFocusListeners(() -> updateConfiguration(
+                serverUrlField.getText(),
+                tokenField.getPassword(),
+                profileComboBox.getSelectedIndex() != -1 ?
+                    profilesSonarMap.get(
+                        ((AbstractMap.SimpleEntry<String, String>) profileComboBox.getSelectedItem()).getKey()) :
+                        null,
+                proxyHostField.getText(),
+                proxyPortField.getText(),
+                proxyUsernameField.getText(),
+                proxyPasswordField.getPassword()
+            ),
+            serverUrlField, tokenField,proxyHostField, proxyPortField, proxyUsernameField, proxyPasswordField);
 
         initConfiguration(serverUrlField,
             tokenField,
@@ -152,11 +187,18 @@ public class SonarConfigTab extends JPanel {
             proxyPortField,
             proxyUsernameField,
             proxyPasswordField);
+
+        final Map<String, String> loadedProfiles = loadProfiles(profileComboBox);
+        profilesSonarMap.putAll(loadedProfiles);
+
     }
 
+    /**
+     * Inizializza la configurazione del server SonarQube.
+     */
     private void initConfiguration(JTextField serverUrlField,
                                    JPasswordField tokenField,
-                                   JComboBox<String> profileComboBox,
+                                   JComboBox<AbstractMap.SimpleEntry<String, String>> profileComboBox,
                                    JTextField proxyHostField,
                                    JTextField proxyPortField,
                                    JTextField proxyUsernameField,
@@ -169,6 +211,35 @@ public class SonarConfigTab extends JPanel {
             proxyPortField,
             proxyUsernameField,
             proxyPasswordField);
+    }
+
+    /**
+     * Carica i profili disponibili dal server SonarQube.
+     */
+    private Map<String, String> loadProfiles(JComboBox<AbstractMap.SimpleEntry<String, String>> profileComboBox) {
+        Map<String, String> profiles = null;
+        if(SonarManager.currentConfiguration != null &&
+            SonarManager.currentConfiguration.getServerUrl() != null &&
+            SonarManager.currentConfiguration.getToken() != null) {
+
+            profiles = sonarManager.getProfiles(SonarManager.currentConfiguration.getServerUrl(),
+                new String(SonarManager.currentConfiguration.getToken()));
+
+            profileComboBox.removeAllItems();
+
+            profiles.forEach((key, value) -> profileComboBox.addItem(new AbstractMap.SimpleEntry<>(key, value)));
+
+            Map.Entry<String, String> activeProfileEntry = profiles.entrySet().stream().filter(
+                entry -> entry.getKey().equals(SonarManager.currentConfiguration.getActiveProfile())
+            ).findFirst().orElse(null);
+
+            if(activeProfileEntry != null){
+                profileComboBox.setSelectedItem(activeProfileEntry);
+            } else {
+                profileComboBox.setSelectedIndex(-1);
+            }
+        }
+        return profiles;
     }
 
     /**
@@ -216,25 +287,27 @@ public class SonarConfigTab extends JPanel {
     /**
      * Aggiorna i profili disponibili nel JComboBox.
      */
-    private void updateProfiles(JComboBox<String> profileComboBox, String serverUrl, String token) {
-        String[] profiles = sonarManager.getProfiles(serverUrl, token);
+    private void updateProfiles(JComboBox<AbstractMap.SimpleEntry<String, String>> profileComboBox, String serverUrl, String token) {
+        Map<String, String> profiles = sonarManager.getProfiles(serverUrl, token);
+
         profileComboBox.removeAllItems();
-        for (String profile : profiles) {
-            profileComboBox.addItem(profile);
-        }
-        JOptionPane.showMessageDialog(this, "Profili aggiornati!", "Successo", JOptionPane.INFORMATION_MESSAGE);
+
+        profiles.forEach((key, value) -> profileComboBox.addItem(new AbstractMap.SimpleEntry<>(key, value)));
+
+        profileComboBox.setSelectedIndex(-1);
+
         this.logManager.log("Profiles updated successfully.");
     }
 
     /**
      * Salva la configurazione corrente.
      */
-    private void saveConfiguration(String serverUrl, char[] token, int activeProfileIndex, String proxyHost,
+    private void saveConfiguration(String serverUrl, char[] token, String activeProfile, String proxyHost,
                                    String proxyPort, String proxyUsername, char[] proxyPassword) {
         boolean success = sonarManager.saveConfiguration(
             serverUrl,
             token,
-            activeProfileIndex,
+            activeProfile,
             proxyHost,
             proxyPort,
             proxyUsername,
@@ -255,12 +328,14 @@ public class SonarConfigTab extends JPanel {
     private void importConfiguration(boolean verbose,
                                      JTextField serverUrlField,
                                      JPasswordField tokenField,
-                                     JComboBox<String> profileComboBox,
+                                     JComboBox<AbstractMap.SimpleEntry<String, String>> profileComboBox,
                                      JTextField proxyHostField,
                                      JTextField proxyPortField,
                                      JTextField proxyUsernameField,
                                      JPasswordField proxyPasswordField) {
+
         Configuration configuration = sonarManager.importConfiguration();
+
         if (configuration != null) {
             this.setFields(
                 serverUrlField,
@@ -271,6 +346,9 @@ public class SonarConfigTab extends JPanel {
                 proxyUsernameField,
                 proxyPasswordField,
                 configuration);
+
+            sonarManager.setCurrentConfiguration(configuration);
+
             this.logManager.log("Configuration imported successfully.");
             if(verbose){
                 JOptionPane.showMessageDialog(this, "Configurazione importata con successo!", "Successo", JOptionPane.INFORMATION_MESSAGE);
@@ -288,18 +366,68 @@ public class SonarConfigTab extends JPanel {
      */
     private void setFields(JTextField serverUrlField,
                            JPasswordField tokenField,
-                           JComboBox<String> profileComboBox,
+                           JComboBox<AbstractMap.SimpleEntry<String, String>> profileComboBox,
                            JTextField proxyHostField,
                            JTextField proxyPortField,
                            JTextField proxyUsernameField,
                            JPasswordField proxyPasswordField,
                             Configuration configuration) {
+
         serverUrlField.setText(configuration.getServerUrl());
         tokenField.setText(new String(configuration.getToken()));
-        profileComboBox.setSelectedItem(configuration.getActiveProfileIndex());
+
+        String activeProfileKey = configuration.getActiveProfile();
+        Optional<Map.Entry<String, String>> activeProfileEntry =
+            sonarManager.getProfiles(serverUrlField.getText(), new String(tokenField.getPassword()))
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().equals(activeProfileKey))
+                .findFirst();
+
+        if(activeProfileEntry.isPresent()){
+            profileComboBox.setSelectedItem(activeProfileEntry.get());
+        } else {
+            profileComboBox.setSelectedIndex(-1);
+        }
+
         proxyHostField.setText(configuration.getProxyHost());
         proxyPortField.setText(configuration.getProxyPort());
         proxyUsernameField.setText(configuration.getProxyUsername());
         proxyPasswordField.setText(new String(configuration.getProxyPassword()));
+
+        sonarManager.setCurrentConfiguration(configuration);
     }
+
+    /**
+        * Aggiunge un listener di focus ai componenti passati come input.
+     */
+    private void addFocusListeners(Runnable onFocusLostAction, JComponent... components) {
+        FocusListener listener = new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                onFocusLostAction.run();
+            }
+        };
+        for (JComponent component : components) {
+            component.addFocusListener(listener);
+        }
+    }
+
+    /**
+     * Aggiorna la configurazione corrente.
+     */
+    private void updateConfiguration(String serverUrl, char[] token, String activeProfile, String proxyHost,
+                                     String proxyPort, String proxyUsername, char[] proxyPassword) {
+        Configuration configuration = new Configuration(
+            serverUrl,
+            token,
+            activeProfile,
+            proxyHost,
+            proxyPort,
+            proxyUsername,
+            proxyPassword);
+
+        sonarManager.setCurrentConfiguration(configuration);
+    }
+
 }

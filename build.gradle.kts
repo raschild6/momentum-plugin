@@ -1,5 +1,4 @@
 import org.jetbrains.changelog.Changelog
-import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
@@ -9,6 +8,7 @@ plugins {
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
+    alias(libs.plugins.shadow) // Gradle Shadow Plugin
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -18,6 +18,13 @@ version = providers.gradleProperty("pluginVersion").get()
 kotlin {
     jvmToolchain(17)
 }
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 
 // Configure project's dependencies
 repositories {
@@ -31,6 +38,7 @@ repositories {
     maven {
         url = uri("https://maven.sonarsource.org")
     }
+
 }
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
@@ -81,19 +89,6 @@ intellijPlatform {
     pluginConfiguration {
         version = providers.gradleProperty("pluginVersion")
 
-        // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
-//        description = providers.fileContents(layout.projectDirectory.file("README.md")).asText.map {
-//            val start = "<!-- Plugin description -->"
-//            val end = "<!-- Plugin description end -->"
-//
-//            with(it.lines()) {
-//                if (!containsAll(listOf(start, end))) {
-//                    throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
-//                }
-//                subList(indexOf(start) + 1, indexOf(end)).joinToString("\n").let(::markdownToHTML)
-//            }
-//        }
-
         val changelog = project.changelog // local variable for configuration cache compatibility
         // Get the latest available change notes from the changelog file
         changeNotes = providers.gradleProperty("pluginVersion").map { pluginVersion ->
@@ -111,6 +106,7 @@ intellijPlatform {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
             untilBuild = providers.gradleProperty("pluginUntilBuild")
         }
+
     }
 
     signing {
@@ -152,6 +148,14 @@ kover {
 }
 
 tasks {
+    shadowJar {
+        mergeServiceFiles()
+        from(project.configurations.runtimeClasspath.get().filter {
+            it.name.contains("sonar-plugin-api")
+        })
+        configurations = listOf(project.configurations.runtimeClasspath.get())
+    }
+
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
@@ -159,6 +163,13 @@ tasks {
     publishPlugin {
         dependsOn(patchChangelog)
     }
+
+    jar {
+        manifest {
+            attributes["Class-Path"] = configurations.runtimeClasspath.get().joinToString(" ") { it.name }
+        }
+    }
+
 }
 
 intellijPlatformTesting {

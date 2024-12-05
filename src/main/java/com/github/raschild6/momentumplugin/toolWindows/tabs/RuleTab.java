@@ -2,31 +2,36 @@ package com.github.raschild6.momentumplugin.toolWindows.tabs;
 
 import com.github.raschild6.momentumplugin.managers.LogManager;
 import com.github.raschild6.momentumplugin.managers.RuleManager;
-import com.github.raschild6.momentumplugin.toolWindows.tabs.details.RuleDialog;
-import org.sonar.api.server.rule.RulesDefinition.Rule;
+import com.github.raschild6.momentumplugin.managers.SonarManager;
+import com.intellij.util.ui.JBUI;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.List;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RuleTab extends JPanel {
     private final RuleManager ruleManager;
     private final LogManager logManager;
+    private final SonarManager sonarManager;
 
-    private final JTable rulesTable;
-    private final DefaultTableModel tableModel;
+    private DefaultTableModel tableModel;
 
-    public RuleTab(RuleManager ruleManager, LogManager logManager) {
+    public RuleTab(RuleManager ruleManager, LogManager logManager, SonarManager sonarManager) {
         this.ruleManager = ruleManager;
         this.logManager = logManager;
+        this.sonarManager = sonarManager;
+
+        final Map<String, String> loadedProfiles = new HashMap<>();
 
         this.setLayout(new BorderLayout());
 
-        // Colonne della tabella basate sulla struttura della classe Rule
-        String[] columnNames = {"Key", "Name", "Severity", "Status"};
+        // Colonne della tabella basate sulla struttura della classe SummaryRule
+        String[] columnNames = {"Key", "Name", "Severity", "Status", "Type", "Template"};
         this.tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -34,80 +39,99 @@ public class RuleTab extends JPanel {
             }
         };
 
-        this.rulesTable = new JTable(tableModel);
+        // Creazione della tabella con il nuovo modello
+        JTable rulesTable = new JTable(tableModel);
 
-        // Caricamento iniziale delle regole
-        loadRules();
+        // Configurazione delle dimensioni preferite per ogni colonna
+        rulesTable.getColumnModel().getColumn(0).setPreferredWidth(100); // Key
+        rulesTable.getColumnModel().getColumn(1).setPreferredWidth(700); // Name
+        rulesTable.getColumnModel().getColumn(2).setPreferredWidth(80);  // Severity
+        rulesTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Status
+        rulesTable.getColumnModel().getColumn(4).setPreferredWidth(50); // Type
+        rulesTable.getColumnModel().getColumn(5).setPreferredWidth(50);  // Template
 
-        // Listener per il doppio click su una riga
-        rulesTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = rulesTable.rowAtPoint(e.getPoint());
-                    if (row == tableModel.getRowCount() - 1) {
-                        // Riga vuota: aggiunta nuova regola
-                        openRuleDialog(null);
-                    } else {
-                        // Riga esistente: modifica regola
-                        Rule rule = getRuleFromRow(row);
-                        openRuleDialog(rule);
-                    }
-                }
-            }
-        });
+        rulesTable.removeColumn(rulesTable.getColumnModel().getColumn(4)); // Remove Type
+        rulesTable.removeColumn(rulesTable.getColumnModel().getColumn(4)); // Remove Template
+
+        // Top panel con selectbox per i profili
+        JPanel topPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        // Label "Select Profile:"
+        JLabel profileLabel = new JLabel("Select Profile: ");
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 0, 10); // Spaziatura a destra della label
+        gbc.anchor = GridBagConstraints.WEST; // Allineamento a sinistra
+        topPanel.add(profileLabel, gbc);
+
+        // SelectBox (largo)
+        JComboBox<AbstractMap.SimpleEntry<String, String>> profileComboBox = new JComboBox<>();
+        profileComboBox.addActionListener(new ProfileSelectionHandler());
+        gbc.gridx = 1;
+        gbc.weightx = 1.0; // Espande orizzontalmente il selectbox
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Riempie lo spazio disponibile
+        topPanel.add(profileComboBox, gbc);
+
+        // Bottone "Refresh Profiles" (dimensione fissa)
+        JButton updateProfilesButton = new JButton("Refresh Profiles");
+        gbc.gridx = 2;
+        gbc.weightx = 0; // Nessuna espansione per il bottone
+        gbc.fill = GridBagConstraints.NONE; // Dimensione naturale del bottone
+        gbc.insets = new Insets(0, 10, 0, 0); // Spaziatura a sinistra del bottone
+        topPanel.add(updateProfilesButton, gbc);
+
+        // Configura il pannello
+        topPanel.setBorder(JBUI.Borders.empty(10));
+        this.add(topPanel, BorderLayout.NORTH);
+
 
         // Barra di scorrimento per la tabella
         JScrollPane scrollPane = new JScrollPane(rulesTable);
         this.add(scrollPane, BorderLayout.CENTER);
 
-        // Pulsante di import
-        JButton importButton = new JButton("Importa regole da profilo");
-//        importButton.addActionListener(e -> openImportDialog());
-        this.add(importButton, BorderLayout.SOUTH);
+        // Pulsante di import in basso
+        JButton newRuleButton = new JButton("Create New Rule for this Profile");
+        newRuleButton.addActionListener(e -> this.ruleManager.createNewRule());
+        this.add(newRuleButton, BorderLayout.SOUTH);
+
+        updateProfilesButton.addActionListener(e -> {
+            tableModel.setRowCount(0);
+            loadedProfiles.clear();
+            loadedProfiles.putAll(this.ruleManager.loadProfiles(this.sonarManager, profileComboBox));
+        });
+
+        // Caricamento iniziale dei profili
+        loadedProfiles.clear();
+        loadedProfiles.putAll(this.ruleManager.loadProfiles(this.sonarManager, profileComboBox));
+
+        // Caricamento iniziale delle regole se c'è un profilo selezionato
+        this.ruleManager.loadRules(this.sonarManager, tableModel,
+            this.ruleManager.getSelectedProfileKey(profileComboBox, loadedProfiles, true));
     }
 
-    private void loadRules() {
-        tableModel.setRowCount(0); // Resetta i dati
-        List<Rule> rules = ruleManager.getAllRules(); // Recupera le regole dal RuleManager
-        for (Rule rule : rules) {
-            tableModel.addRow(new Object[]{
-                rule.key(),          // Key della regola
-                rule.name(),         // Nome della regola
-//                rule.severity(),     // Severità
-                rule.status()        // Stato della regola
+    private class ProfileSelectionHandler implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JComboBox<AbstractMap.SimpleEntry<String, String>> source =
+                (JComboBox<AbstractMap.SimpleEntry<String, String>>) e.getSource();
+
+            // Differisci l'elaborazione per attendere l'aggiornamento dello stato della JComboBox
+            SwingUtilities.invokeLater(() -> {
+                // Ora l'elemento selezionato è aggiornato
+                AbstractMap.SimpleEntry<String, String> selectedEntry =
+                    (AbstractMap.SimpleEntry<String, String>) source.getSelectedItem();
+
+                // Ottieni la chiave del profilo selezionato (o null se nessuno è selezionato)
+                String selectedProfileKey = (selectedEntry != null) ? selectedEntry.getKey() : null;
+
+                // Se esiste un profilo selezionato, carica le regole
+                if (selectedProfileKey != null) {
+                    ruleManager.loadRules(sonarManager, tableModel, selectedProfileKey);
+                    logManager.log("Loaded rules for profile: " + selectedEntry.getKey() + "=" + selectedEntry.getValue());
+                }
             });
         }
-        // Aggiungi una riga vuota per l'inserimento di nuove regole
-        tableModel.addRow(new Object[]{"", "", "", ""});
     }
 
-    private Rule getRuleFromRow(int row) {
-        // Crea un oggetto Rule partendo dai dati della riga
-        return null;
-//            new Rule(
-//            (String) tableModel.getValueAt(row, 0), // Key
-//            (String) tableModel.getValueAt(row, 1), // Name
-//            (String) tableModel.getValueAt(row, 2), // Severity
-//            (String) tableModel.getValueAt(row, 3)  // Status
-//        );
-    }
-
-    private void openRuleDialog(Rule rule) {
-        // Passa la regola al dialog, per modifiche o per una nuova regola (null indica nuova regola)
-        RuleDialog dialog = new RuleDialog(rule, ruleManager);
-        dialog.setVisible(true);
-
-        // Ricarica le regole dopo la chiusura del dialog
-        loadRules();
-    }
-//
-//    private void openImportDialog() {
-//        // ImportDialog per gestire i profili Sonar
-//        ImportDialog dialog = new ImportDialog(ruleManager);
-//        dialog.setVisible(true);
-//
-//        // Ricarica le regole dopo l'importazione
-//        loadRules();
-//    }
 }

@@ -37,11 +37,11 @@ public class RulesToolWindowFactory implements ToolWindowFactory {
         LogTab logTab = new LogTab(logManager);
         JPanel logPanel = logTab.createLogTab();
 
-        // Tab "Regole"
-        JPanel rulesTab = new RuleTab(ruleManager, logManager);
-
         // Tab "Gestione configurazione Sonar"
         JPanel configTab = new SonarConfigTab(sonarManager, logManager);
+
+        // Tab "Regole"
+        JPanel rulesTab = new RuleTab(ruleManager, logManager, sonarManager);
 
         tabbedPane.addTab("Rules", rulesTab);
         tabbedPane.addTab("Sonar Config", configTab);
@@ -55,20 +55,6 @@ public class RulesToolWindowFactory implements ToolWindowFactory {
         Content content = contentFactory.createContent(mainPanel, "Rules Manager", false);
         toolWindow.getContentManager().addContent(content);
 
-        initSonarQubeConfiguration(sonarManager);
     }
 
-    private void initSonarQubeConfiguration(SonarManager sonarManager) {
-    }
-
-    // Metodi per ottenere le istanze di Server e Configuration dal contesto di SonarQube
-    private Server retrieveServerInstance() {
-        // Implementa il recupero del server
-        return null;
-    }
-
-    private Configuration retrieveConfigurationInstance() {
-        // Implementa il recupero della configurazione
-        return null;
-    }
 }
