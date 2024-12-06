@@ -8,7 +8,6 @@ plugins {
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
-    alias(libs.plugins.shadow) // Gradle Shadow Plugin
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -148,26 +147,12 @@ kover {
 }
 
 tasks {
-    shadowJar {
-        mergeServiceFiles()
-        from(project.configurations.runtimeClasspath.get().filter {
-            it.name.contains("sonar-plugin-api")
-        })
-        configurations = listOf(project.configurations.runtimeClasspath.get())
-    }
-
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
 
     publishPlugin {
         dependsOn(patchChangelog)
-    }
-
-    jar {
-        manifest {
-            attributes["Class-Path"] = configurations.runtimeClasspath.get().joinToString(" ") { it.name }
-        }
     }
 
 }
