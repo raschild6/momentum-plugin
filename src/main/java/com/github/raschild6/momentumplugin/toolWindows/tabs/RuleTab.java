@@ -19,6 +19,8 @@ public class RuleTab extends JPanel {
     private final LogManager logManager;
     private final SonarManager sonarManager;
 
+    public static JProgressBar progressBar = new JProgressBar();
+
     private DefaultTableModel tableModel;
 
     public RuleTab(RuleManager ruleManager, LogManager logManager, SonarManager sonarManager) {
@@ -61,7 +63,7 @@ public class RuleTab extends JPanel {
         JLabel profileLabel = new JLabel("Select Profile: ");
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 0, 10); // Spaziatura a destra della label
+        gbc.insets = JBUI.insetsRight(10); // Spaziatura a destra della label
         gbc.anchor = GridBagConstraints.WEST; // Allineamento a sinistra
         topPanel.add(profileLabel, gbc);
 
@@ -78,20 +80,28 @@ public class RuleTab extends JPanel {
         gbc.gridx = 2;
         gbc.weightx = 0; // Nessuna espansione per il bottone
         gbc.fill = GridBagConstraints.NONE; // Dimensione naturale del bottone
-        gbc.insets = new Insets(0, 10, 0, 0); // Spaziatura a sinistra del bottone
+        gbc.insets = JBUI.insetsLeft(10); // Spaziatura a sinistra del bottone
         topPanel.add(updateProfilesButton, gbc);
+
+        progressBar = new JProgressBar();
+        progressBar.setIndeterminate(true);
+        progressBar.setVisible(false);
+        gbc.gridx = 3;
+        gbc.weightx = 0; // Nessuna espansione per il bottone
+        gbc.fill = GridBagConstraints.NONE; // Dimensione naturale del bottone
+        gbc.insets = JBUI.insetsLeft(10); // Spaziatura a sinistra del bottone
+        topPanel.add(progressBar, gbc);
 
         // Configura il pannello
         topPanel.setBorder(JBUI.Borders.empty(10));
         this.add(topPanel, BorderLayout.NORTH);
-
 
         // Barra di scorrimento per la tabella
         JScrollPane scrollPane = new JScrollPane(rulesTable);
         this.add(scrollPane, BorderLayout.CENTER);
 
         // Pulsante di import in basso
-        JButton newRuleButton = new JButton("Create New Rule for this Profile");
+        JButton newRuleButton = new JButton("Ask Chat-GPT for New Rule");
         newRuleButton.addActionListener(e -> this.ruleManager.createNewRule());
         this.add(newRuleButton, BorderLayout.SOUTH);
 
@@ -132,6 +142,14 @@ public class RuleTab extends JPanel {
                 }
             });
         }
+    }
+
+    public static void startLoading() {
+        progressBar.setVisible(true);
+    }
+
+    public static void stopLoading() {
+        progressBar.setVisible(false);
     }
 
 }

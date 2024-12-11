@@ -1,22 +1,12 @@
 package com.github.raschild6.momentumplugin.managers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.raschild6.momentumplugin.models.Configuration;
 import com.github.raschild6.momentumplugin.models.SummaryRule;
-import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import org.sonar.api.server.rule.RulesDefinition;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.Authenticator;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
