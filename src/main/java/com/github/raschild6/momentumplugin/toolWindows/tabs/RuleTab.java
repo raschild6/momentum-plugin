@@ -101,9 +101,30 @@ public class RuleTab extends JPanel {
         this.add(scrollPane, BorderLayout.CENTER);
 
         // Pulsante di import in basso
+        JPanel newRuleButtons = new JPanel();
+        newRuleButtons.setLayout(new FlowLayout(FlowLayout.CENTER));
+
         JButton newRuleButton = new JButton("Ask Chat-GPT for New Rule");
         newRuleButton.addActionListener(e -> this.ruleManager.createNewRule());
-        this.add(newRuleButton, BorderLayout.SOUTH);
+        newRuleButtons.add(newRuleButton);
+
+        JButton openTemplateButton = new JButton("Open Templates Folder");
+        openTemplateButton.addActionListener(e -> this.ruleManager.openTemplatesFolder());
+        newRuleButtons.add(openTemplateButton);
+
+        JButton generateTemplateButton = new JButton("Generate New Template");
+        generateTemplateButton.addActionListener(e -> this.ruleManager.generateTemplateButton());
+        newRuleButtons.add(generateTemplateButton);
+
+        JButton loadRuleButton = new JButton("Load Rule on Profile");
+        loadRuleButton.addActionListener(e -> this.ruleManager.loadRuleOnTemplate());
+        newRuleButtons.add(loadRuleButton);
+
+        JButton loadTemplateButton = new JButton("Load Template on Profile");
+        loadTemplateButton.addActionListener(e -> this.ruleManager.loadTemplateOnProfile());
+        newRuleButtons.add(loadTemplateButton);
+
+        this.add(newRuleButtons, BorderLayout.SOUTH);
 
         updateProfilesButton.addActionListener(e -> {
             tableModel.setRowCount(0);

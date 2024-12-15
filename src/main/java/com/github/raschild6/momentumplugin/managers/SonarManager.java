@@ -5,18 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.raschild6.momentumplugin.models.Configuration;
 import com.github.raschild6.momentumplugin.models.SummaryRule;
 
-import java.io.File;
-import java.io.IOException;
+import javax.swing.*;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SonarManager {
 
@@ -198,7 +199,7 @@ public class SonarManager {
         try {
             // Ottieni la directory dell'utente
             String userHome = System.getProperty("user.home");
-            Path configDir = Paths.get(userHome, ".config", "MomentumPlugin");
+            Path configDir = Paths.get(userHome, ".config", "MomentumPlugin", "configs");
 
             // Crea la directory se non esiste
             File directory = configDir.toFile();
@@ -225,14 +226,15 @@ public class SonarManager {
     }
 
     /**
-     * Importa la configurazione corrente da file JSON se trovato in /{user}/.config/MomentumPlugin/sonar-config.json.
+     * Importa la configurazione corrente da file JSON se trovato in /{user}/.config/MomentumPlugin/configs/sonar-config
+     * .json.
      *
      */
     public Configuration importConfiguration() {
         try {
             // Ottieni la directory dell'utente
             String userHome = System.getProperty("user.home");
-            Path configDir = Paths.get(userHome, ".config", "MomentumPlugin");
+            Path configDir = Paths.get(userHome, ".config", "MomentumPlugin", "configs");
 
             // Verifica se esiste la directory
             File directory = configDir.toFile();
@@ -268,93 +270,82 @@ public class SonarManager {
         currentConfiguration = new Configuration(serverUrl, token, activeProfileIndex, proxyHost, proxyPort, proxyUsername, proxyPassword);
     }
 
-    public void importRuleToProfile(String selectedProfile, String ruleContent) {
+
+    /**
+     * Carica un file JAR su SonarQube.
+     *
+     * @param jarPath Percorso del file JAR
+     * @param serverUrl URL del server SonarQube
+     * @param token Token di accesso
+     */
+    public void uploadToSonarQube(String jarPath, String serverUrl, char[] token) {
+
+        File jarFile = new File(jarPath);
+
+        if (!jarFile.exists() || !jarFile.isFile()) {
+            logManager.log("File JAR not found: " + jarPath);
+            JOptionPane.showMessageDialog(null, "File JAR non trovato: " + jarPath, "Errore", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            // Configura la connessione HTTP
+            URL url = new URL(serverUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Authorization",
+                "Basic " + Base64.getEncoder().encodeToString((new String(token) + ":").getBytes()));
+
+            String boundary = "--BoundaryString";
+            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+            // Scrivi i dati nel body della richiesta
+            try (OutputStream outputStream = connection.getOutputStream();
+                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), true)) {
+
+                // Aggiungi il file JAR come parte del form-data
+                writer.append("--")
+                    .append(boundary)
+                    .append("\r\n");
+                writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"")
+                    .append(jarFile.getName())
+                    .append("\"\r\n");
+                writer.append("Content-Type: application/java-archive\r\n\r\n").flush();
+
+                // Scrivi il contenuto del file JAR
+                Files.copy(jarFile.toPath(), outputStream);
+                outputStream.flush();
+
+                // Chiudi la parte del form-data
+                writer.append("\r\n")
+                    .flush();
+                writer.append("--")
+                    .append(boundary)
+                    .append("--\r\n")
+                    .flush();
+            }
+
+            // Leggi la risposta dal server
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                JOptionPane.showMessageDialog(null, "Plugin caricato con successo su SonarQube!", "Successo", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line).append("\n");
+                    }
+                    JOptionPane.showMessageDialog(null, "Errore durante il caricamento: " + response.toString(), "Errore", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+
+        } catch (IOException e) {
+            logManager.log("Error during upload: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Errore durante il caricamento: " + e.getMessage(), "Errore", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-//    /**
-//     * Get all the rules of the active profile from SonarQube.
-//     *
-//     * @param currentConfiguration The current configuration containing server details, token, and active profile.
-//     * @return A list of rules for the active profile.
-//     */
-//    public List<RulesDefinition.Rule> getRulesOfProfile(Configuration currentConfiguration) {
-//        // Verifica che la configurazione sia completa
-//        if (currentConfiguration == null ||
-//            currentConfiguration.getServerUrl() == null ||
-//            currentConfiguration.getActiveProfile() == null ||
-//            currentConfiguration.getToken() == null ||
-//            currentConfiguration.getToken().length == 0) {
-//            throw new IllegalArgumentException("Invalid configuration. Please ensure all required fields are filled.");
-//        }
-//
-//        // Preparazione della connessione
-//        OkHttpClient client = createHttpClient(currentConfiguration);
-//        String url = currentConfiguration.getServerUrl() + "/api/rules/search?profile=" + currentConfiguration.getActiveProfile();
-//
-//        Request request = new Request.Builder()
-//            .url(url)
-//            .addHeader("Authorization", "Bearer " + new String(currentConfiguration.getToken()))
-//            .build();
-//
-//        try (Response response = client.newCall(request).execute()) {
-//            if (response.isSuccessful() && response.body() != null) {
-//                // Parsing della risposta JSON
-//                String responseBody = response.body().string();
-//                return parseRulesFromJson(responseBody);
-//            } else {
-//                throw new RuntimeException("Failed to fetch rules. Server returned: " + response.code() + " - " + response.message());
-//            }
-//        } catch (IOException e) {
-//            throw new RuntimeException("Error occurred while fetching rules from SonarQube: " + e.getMessage(), e);
-//        }
-//    }
-//
-//    private OkHttpClient createHttpClient(Configuration configuration) {
-//        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-//
-//        // Configura il proxy se fornito
-//        if (configuration.getProxyHost() != null && !configuration.getProxyHost().isEmpty() &&
-//            configuration.getProxyPort() != null && !configuration.getProxyPort().isEmpty()) {
-//            Proxy proxy = new Proxy(Proxy.Type.HTTP,
-//                new InetSocketAddress(configuration.getProxyHost(), Integer.parseInt(configuration.getProxyPort())));
-//            builder.proxy(proxy);
-//
-//            // Configura le credenziali del proxy
-//            if (configuration.getProxyUsername() != null && configuration.getProxyPassword() != null) {
-//                Authenticator proxyAuthenticator = (route, response) -> {
-//                    String credential = Credentials.basic(configuration.getProxyUsername(),
-//                        new String(configuration.getProxyPassword()));
-//                    return response.request().newBuilder().header("Proxy-Authorization", credential).build();
-//                };
-//                builder.proxyAuthenticator(proxyAuthenticator);
-//            }
-//        }
-//
-//        return builder.build();
-//    }
-//
-//    private List<RulesDefinition.Rule> parseRulesFromJson(String jsonResponse) {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        try {
-//            JsonNode rootNode = objectMapper.readTree(jsonResponse);
-//            JsonNode rulesNode = rootNode.path("rules");
-//            List<RulesDefinition.Rule> rules = new ArrayList<>();
-//            for (JsonNode ruleNode : rulesNode) {
-//                // Esempio di mappatura
-//                RulesDefinition.Rule rule = new RulesDefinition.Rule();
-//                rule.setKey(ruleNode.path("key").asText());
-//                rule.setName(ruleNode.path("name").asText());
-//                rule.setSeverity(ruleNode.path("severity").asText());
-//                rules.add(rule);
-//            }
-//            return rules;
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException("Failed to parse JSON response: " + e.getMessage(), e);
-//        } catch(JsonMappingException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-//
-//
 
 }

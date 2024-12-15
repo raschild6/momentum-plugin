@@ -13,39 +13,32 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
-// Set the JVM language level used to build the project.
 kotlin {
     jvmToolchain(17)
 }
-
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
-
 // Configure project's dependencies
 repositories {
     mavenCentral()
 
-    // IntelliJ Platform Gradle Plugin Repositories Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-repositories-extension.html
+    gradlePluginPortal()
+
     intellijPlatform {
         defaultRepositories()
     }
 
-    maven {
-        url = uri("https://maven.sonarsource.org")
-    }
-
 }
 
-// Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
     testImplementation(libs.junit)
 
-    // SonarQube Plugin API
-    /*
+    /* SonarQube Plugin API
+
         10.7.0.96327	10.11.0.2468
         10.6.0.92116	10.7.0.2191
         10.5.1.90531	10.7.0.2191
@@ -65,6 +58,7 @@ dependencies {
     */
     implementation("org.sonarsource.api.plugin:sonar-plugin-api:10.14.0.2599")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+    implementation("org.apache.maven:maven-embedder:4.0.0-rc-1")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
@@ -74,9 +68,8 @@ dependencies {
         bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
 
         // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
-        plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
+        plugins(providers.gradleProperty("platformPlugins").map { it.split(',')} )
 
-        instrumentationTools()
         pluginVerifier()
         zipSigner()
         testFramework(TestFrameworkType.Platform)

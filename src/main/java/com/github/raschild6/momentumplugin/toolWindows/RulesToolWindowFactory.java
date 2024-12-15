@@ -22,7 +22,7 @@ public class RulesToolWindowFactory implements ToolWindowFactory {
         // Recupera le istanze di Server e Configuration
         LogManager logManager = new LogManager();
         SonarManager sonarManager = new SonarManager(logManager);
-        RuleManager ruleManager = new RuleManager(logManager);
+        RuleManager ruleManager = new RuleManager(logManager, sonarManager);
 
         // Creazione della UI per il Tool Window
         JPanel mainPanel = new JPanel();

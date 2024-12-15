@@ -8,7 +8,6 @@ intelliJPlatform = "2.2.0"
 kotlin = "2.1.0"
 kover = "0.9.0"
 qodana = "2024.2.6"
-shadow = "8.1.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -19,4 +18,3 @@ intelliJPlatform = { id = "org.jetbrains.intellij.platform", version.ref = "inte
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 qodana = { id = "org.jetbrains.qodana", version.ref = "qodana" }
-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
