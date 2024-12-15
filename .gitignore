@@ -6,4 +6,5 @@ build
 verification*
 verifier-*.jar
 .kotlin
-src\main\resources\sonar-plugin-template
+src/main/resources/sonar-plugin-template/
+
