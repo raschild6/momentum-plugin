@@ -323,7 +323,7 @@ public class SonarConfigTab extends JPanel {
     }
 
     /**
-     * Importa la configurazione salvata, se trovata in /{user}/.config/MomentumPlugin/sonar-config.json.
+     * Importa la configurazione salvata, se trovata in /{user}/.config/MomentumPlugin/configs/sonar-config.json.
      */
     private void importConfiguration(boolean verbose,
                                      JTextField serverUrlField,
