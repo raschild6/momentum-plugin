@@ -13,6 +13,7 @@ import java.awt.event.ActionListener;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class RuleTab extends JPanel {
     private final RuleManager ruleManager;
@@ -104,15 +105,19 @@ public class RuleTab extends JPanel {
         JPanel newRuleButtons = new JPanel();
         newRuleButtons.setLayout(new FlowLayout(FlowLayout.CENTER));
 
-        JButton newRuleButton = new JButton("Ask Chat-GPT for New Rule");
+        JButton newRuleButton = new JButton("Chat-GPT New Rule");
         newRuleButton.addActionListener(e -> this.ruleManager.createNewRule());
         newRuleButtons.add(newRuleButton);
 
-        JButton openTemplateButton = new JButton("Open Templates Folder");
+        Icon folderIcon = UIManager.getIcon("FileView.directoryIcon");
+        JButton openTemplateButton = new JButton(folderIcon);
+        openTemplateButton.setToolTipText("Open Templates Folder");  // Optional: Tooltip text
         openTemplateButton.addActionListener(e -> this.ruleManager.openTemplatesFolder());
         newRuleButtons.add(openTemplateButton);
 
-        JButton generateTemplateButton = new JButton("Generate New Template");
+        JButton generateTemplateButton = new JButton("+");
+        generateTemplateButton.setFont(new Font("Arial", Font.PLAIN, 24));
+        generateTemplateButton.setToolTipText("Generate New Template");  // Optional: Tooltip text
         generateTemplateButton.addActionListener(e -> this.ruleManager.generateTemplateButton());
         newRuleButtons.add(generateTemplateButton);
 

@@ -1,6 +1,6 @@
 package com.github.raschild6.momentumplugin.managers;
 
-import com.github.raschild6.momentumplugin.mavenSupport.LoggerOutputStream;
+import com.github.raschild6.momentumplugin.mavenSupport.BufferedLoggerOutputStream;
 import com.github.raschild6.momentumplugin.models.SummaryRule;
 import com.github.raschild6.momentumplugin.toolWindows.tabs.RuleTab;
 import com.intellij.openapi.fileEditor.FileEditorManager;
@@ -211,7 +211,15 @@ public class RuleManager {
     }
 
     public void generateTemplateButton() {
-        Path templatePathFolder = generateSonarRuleJar();
+        String templateName = JOptionPane.showInputDialog(null, "Inserisci il nome del Template da creare:", "Nome Template",
+            JOptionPane.QUESTION_MESSAGE);
+
+        Path templatePathFolder;
+        if(templateName == null || templateName.isEmpty()) {
+            templatePathFolder = generateSonarRuleJar(null);
+        }else{
+            templatePathFolder = generateSonarRuleJar(templateName);
+        }
 
         if(templatePathFolder != null) {
             JOptionPane.showMessageDialog(null, "Template generato con successo.", "Success",
@@ -258,10 +266,10 @@ public class RuleManager {
         }
     }
 
-    private Path generateSonarRuleJar() {
+    private Path generateSonarRuleJar(String templateName) {
         String userHome = System.getProperty("user.home");
         Path tempDir = Paths.get(userHome, ".config", "MomentumPlugin", "templates",
-            "temp-" + LocalDateTime.now().format(DATE_TIME_FORMATTER));
+            templateName == null? "temp-" + LocalDateTime.now().format(DATE_TIME_FORMATTER) : templateName);
 
         try {
             // Extract sonar-plugin-template.zip from resources inside the JAR
@@ -385,7 +393,7 @@ public class RuleManager {
             File selectedFolder = folderTemplateChooser.getSelectedFile();
 
             // Now, compile the Maven project
-            String jarFilePath = compileMavenProject(selectedFolder.toPath().toString());
+            String jarFilePath = compileMavenProject(Paths.get(selectedFolder.toPath().toString(), "sonar-plugin-template").toString());
 
             if (jarFilePath != null) {
                 // After compilation, upload the JAR to SonarQube
@@ -414,8 +422,8 @@ public class RuleManager {
         MavenCli cli = new MavenCli();
 
         // Ottieni il tuo loggerManager come PrintStream
-        PrintStream outStream = new PrintStream(new LoggerOutputStream(logManager));
-        PrintStream errStream = new PrintStream(new LoggerOutputStream(logManager));
+        PrintStream outStream = new PrintStream(new BufferedLoggerOutputStream(logManager));
+        PrintStream errStream = new PrintStream(new BufferedLoggerOutputStream(logManager));
 
         // Esegui il comando Maven
         int result = cli.doMain(goals, new File(workingDirectory).getAbsolutePath(), outStream, errStream);
