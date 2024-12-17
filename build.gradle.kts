@@ -58,7 +58,7 @@ dependencies {
     */
     implementation("org.sonarsource.api.plugin:sonar-plugin-api:10.14.0.2599")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
-    implementation("org.apache.maven:maven-embedder:4.0.0-rc-1")
+    implementation("org.apache.maven:maven-embedder:4.0.0-rc-2")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
